@@ -251,6 +251,11 @@ const (
 	// BitcoinChainName is a string that represents the Bitcoin blockchain.
 	BitcoinChainName = "bitcoin"
 
+	// NusacoinChainName is a string that represents the Nusacoin
+	// blockchain. It is used to namespace data/log directories and to
+	// locate the backend node's configuration file (nusacoin.conf).
+	NusacoinChainName = "nusacoin"
+
 	bitcoindBackendName = "bitcoind"
 	btcdBackendName     = "btcd"
 	neutrinoBackendName = "neutrino"
@@ -433,6 +438,7 @@ type Config struct {
 	FeeURL string `long:"feeurl" description:"DEPRECATED: Use 'fee.url' option. Optional URL for external fee estimation. If no URL is specified, the method for fee estimation will depend on the chosen backend and network. Must be set for neutrino on mainnet." hidden:"true"`
 
 	Bitcoin      *lncfg.Chain    `group:"Bitcoin" namespace:"bitcoin"`
+	Nusacoin     *lncfg.Chain    `group:"Nusacoin" namespace:"nusacoin"`
 	BtcdMode     *lncfg.Btcd     `group:"btcd" namespace:"btcd"`
 	BitcoindMode *lncfg.Bitcoind `group:"bitcoind" namespace:"bitcoind"`
 	NeutrinoMode *lncfg.Neutrino `group:"neutrino" namespace:"neutrino"`
@@ -706,6 +712,15 @@ func DefaultConfig() Config {
 			TimeLockDelta: chainreg.DefaultBitcoinTimeLockDelta,
 			MaxLocalDelay: defaultMaxLocalCSVDelay,
 			Node:          btcdBackendName,
+		},
+		Nusacoin: &lncfg.Chain{
+			MinHTLCIn:     chainreg.DefaultNusacoinMinHTLCInMSat,
+			MinHTLCOut:    chainreg.DefaultNusacoinMinHTLCOutMSat,
+			BaseFee:       chainreg.DefaultNusacoinBaseFeeMSat,
+			FeeRate:       chainreg.DefaultNusacoinFeeRate,
+			TimeLockDelta: chainreg.DefaultNusacoinTimeLockDelta,
+			MaxLocalDelay: chainreg.DefaultNusacoinMaxLocalCSVDelay,
+			Node:          bitcoindBackendName,
 		},
 		BtcdMode: &lncfg.Btcd{
 			Dir:     defaultBtcdDir,
@@ -1347,6 +1362,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// number of network flags passed; assign active network params
 	// while we're at it.
 	numNets := 0
+	nusacoinActive := false
 	if cfg.Bitcoin.MainNet {
 		numNets++
 		cfg.ActiveNetParams = chainreg.BitcoinMainNetParams
@@ -1362,6 +1378,26 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	if cfg.Bitcoin.RegTest {
 		numNets++
 		cfg.ActiveNetParams = chainreg.BitcoinRegTestNetParams
+	}
+	if cfg.Nusacoin.MainNet {
+		numNets++
+		nusacoinActive = true
+		cfg.ActiveNetParams = chainreg.NusacoinMainNetParams
+	}
+	if cfg.Nusacoin.TestNet3 {
+		numNets++
+		nusacoinActive = true
+		cfg.ActiveNetParams = chainreg.NusacoinTestNetParams
+	}
+	if cfg.Nusacoin.RegTest {
+		numNets++
+		nusacoinActive = true
+		cfg.ActiveNetParams = chainreg.NusacoinRegTestNetParams
+	}
+	if cfg.Nusacoin.SigNet {
+		numNets++
+		nusacoinActive = true
+		cfg.ActiveNetParams = chainreg.NusacoinSigNetParams
 	}
 	if cfg.Bitcoin.SimNet {
 		numNets++
@@ -1418,7 +1454,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	if numNets > 1 {
 		str := "The mainnet, testnet, testnet4, regtest, simnet and " +
 			"signet params can't be used together -- choose one " +
-			"of the five"
+			"of them (across --bitcoin and --nusacoin)"
 
 		return nil, mkErr(str)
 	}
@@ -1426,23 +1462,63 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// The target network must be provided, otherwise, we won't
 	// know how to initialize the daemon.
 	if numNets == 0 {
-		str := "either --bitcoin.mainnet, or --bitcoin.testnet, " +
+		str := "either --bitcoin.mainnet, --bitcoin.testnet, " +
 			"--bitcoin.testnet4, --bitcoin.simnet, " +
-			"--bitcoin.regtest or --bitcoin.signet must be " +
+			"--bitcoin.regtest, --bitcoin.signet, " +
+			"--nusacoin.mainnet, --nusacoin.testnet, " +
+			"--nusacoin.regtest or --nusacoin.signet must be " +
 			"specified"
 
 		return nil, mkErr(str)
 	}
 
-	err = cfg.Bitcoin.Validate(minTimeLockDelta, funding.MinBtcRemoteDelay)
+	// chainName namespaces data/log directories and selects the
+	// backend node's config file base name (bitcoin.conf vs
+	// nusacoin.conf).
+	chainName := BitcoinChainName
+
+	// When Nusacoin is the active chain, alias its chain config into
+	// the Bitcoin handle. The rest of the codebase only ever reads
+	// chain *configuration values* (network flags, node backend,
+	// fees, delays) through cfg.Bitcoin, while chain *parameters*
+	// (genesis, address formats, ...) come from cfg.ActiveNetParams.
+	// This keeps the fork diff small and easy to rebase.
+	if nusacoinActive {
+		*cfg.Bitcoin = *cfg.Nusacoin
+		chainName = NusacoinChainName
+
+		// Default to the Nusacoin data directory for the bitcoind
+		// backend unless the user overrode it.
+		if cfg.BitcoindMode.Dir == defaultBitcoindDir {
+			cfg.BitcoindMode.Dir = btcutil.AppDataDir(
+				NusacoinChainName, false,
+			)
+		}
+	}
+
+	minRemoteDelay := funding.MinBtcRemoteDelay
+	if nusacoinActive {
+		// Scale the minimum CSV delay by the block time ratio so
+		// the time-based security property matches Bitcoin's
+		// 144 blocks (~24h): 240 Nusacoin blocks (~24h).
+		minRemoteDelay = chainreg.MinNusacoinRemoteDelay
+	}
+
+	err = cfg.Bitcoin.Validate(minTimeLockDelta, minRemoteDelay)
 	if err != nil {
-		return nil, mkErr("error validating bitcoin params: %v", err)
+		return nil, mkErr("error validating chain params: %v", err)
 	}
 
 	switch cfg.Bitcoin.Node {
 	case btcdBackendName:
+		if nusacoinActive {
+			return nil, mkErr("btcd does not support nusacoin, " +
+				"use --nusacoin.node=bitcoind")
+		}
+
 		err := parseRPCParams(
 			cfg.Bitcoin, cfg.BtcdMode, cfg.ActiveNetParams,
+			chainName,
 		)
 		if err != nil {
 			return nil, mkErr("unable to load RPC "+
@@ -1456,6 +1532,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 
 		err := parseRPCParams(
 			cfg.Bitcoin, cfg.BitcoindMode, cfg.ActiveNetParams,
+			chainName,
 		)
 		if err != nil {
 			return nil, mkErr("unable to load RPC "+
@@ -1476,7 +1553,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	}
 
 	cfg.Bitcoin.ChainDir = filepath.Join(
-		cfg.DataDir, defaultChainSubDirname, BitcoinChainName,
+		cfg.DataDir, defaultChainSubDirname, chainName,
 	)
 
 	// Ensure that the user didn't attempt to specify negative values for
@@ -1514,7 +1591,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// We'll now construct the network directory which will be where we
 	// store all the data specific to this chain/network.
 	cfg.networkDir = filepath.Join(
-		cfg.DataDir, defaultChainSubDirname, BitcoinChainName,
+		cfg.DataDir, defaultChainSubDirname, chainName,
 		lncfg.NormalizeNetwork(cfg.ActiveNetParams.Name),
 	)
 
@@ -1538,7 +1615,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	}
 
 	towerDir := filepath.Join(
-		cfg.Watchtower.TowerDir, BitcoinChainName,
+		cfg.Watchtower.TowerDir, chainName,
 		lncfg.NormalizeNetwork(cfg.ActiveNetParams.Name),
 	)
 
@@ -1571,7 +1648,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// Append the network type to the log directory so it is "namespaced"
 	// per network in the same fashion as the data directory.
 	cfg.LogDir = filepath.Join(
-		cfg.LogDir, BitcoinChainName,
+		cfg.LogDir, chainName,
 		lncfg.NormalizeNetwork(cfg.ActiveNetParams.Name),
 	)
 
@@ -2049,7 +2126,7 @@ func CleanAndExpandPath(path string) string {
 }
 
 func parseRPCParams(cConfig *lncfg.Chain, nodeConfig interface{},
-	netParams chainreg.BitcoinNetParams) error {
+	netParams chainreg.BitcoinNetParams, chainName string) error {
 
 	// First, we'll check our node config to make sure the RPC parameters
 	// were set correctly. We'll also determine the path to the conf file
@@ -2105,7 +2182,7 @@ func parseRPCParams(cConfig *lncfg.Chain, nodeConfig interface{},
 		daemonName = bitcoindBackendName
 		confDir = conf.Dir
 		confFile = conf.ConfigPath
-		confFileBase = BitcoinChainName
+		confFileBase = chainName
 
 		// Resolves environment variable references in RPCUser
 		// and RPCPass fields.
