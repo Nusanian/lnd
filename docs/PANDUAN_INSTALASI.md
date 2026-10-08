@@ -2,7 +2,7 @@
 
 Panduan ini menjelaskan cara menjalankan **node Lightning Network Nusacoin** (`lnd-nux`) di **testnet**, langkah demi langkah, untuk operator komunitas yang bukan expert. Semua perintah di bawah ini sudah diverifikasi bekerja di regtest.
 
-> **Catatan:** `lnd-nux` adalah fork LND yang di-porting untuk chain Nusacoin (X11 PoW). Nusacoin **tidak memiliki Taproot** — `lnd-nux` sudah disesuaikan sehingga channel/payment standar (non-taproot) berjalan normal. Invoice testnet diawali `lntn`, alamat on-chain diawali `tn1`.
+> **Catatan:** `lnd-nux` adalah fork LND yang di-porting untuk chain Nusacoin (X11 PoW). Nusacoin **belum** mengaktifkan Taproot — untuk saat ini `lnd-nux` disesuaikan sehingga channel/payment standar (non-taproot) berjalan normal. Taproot masuk roadmap upgrade codebase ke depan. Invoice testnet diawali `lntn`, alamat on-chain diawali `tn1`.
 
 ---
 
