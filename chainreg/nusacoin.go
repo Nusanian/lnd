@@ -301,6 +301,8 @@ var NusacoinSigNetParams = BitcoinNetParams{
 }
 
 // IsNusacoin returns true if the given params are Nusacoin parameters.
+// It compares pointers against the package-level Nusacoin param sets,
+// which are the only ones constructed by this package.
 func IsNusacoin(params *BitcoinNetParams) bool {
 	return params == &NusacoinMainNetParams ||
 		params == &NusacoinTestNetParams ||
