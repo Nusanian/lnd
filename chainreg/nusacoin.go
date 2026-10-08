@@ -301,11 +301,10 @@ var NusacoinSigNetParams = BitcoinNetParams{
 }
 
 // IsNusacoin returns true if the given params are Nusacoin parameters.
-// It compares pointers against the package-level Nusacoin param sets,
-// which are the only ones constructed by this package.
+// All Nusacoin networks share the same genesis block hash, so we compare
+// against that (the outer BitcoinNetParams struct is copied by value in
+// config, so pointer comparison would not work).
 func IsNusacoin(params *BitcoinNetParams) bool {
-	return params == &NusacoinMainNetParams ||
-		params == &NusacoinTestNetParams ||
-		params == &NusacoinRegTestNetParams ||
-		params == &NusacoinSigNetParams
+	return params != nil && params.Params != nil &&
+		params.Params.GenesisHash.IsEqual(nusacoinGenesisHash)
 }
