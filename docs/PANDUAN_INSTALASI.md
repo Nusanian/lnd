@@ -193,6 +193,12 @@ Tunggu minimal **1 konfirmasi** sebelum dipakai buka channel. Block Nusacoin ~6 
 
 ## 8. Connect ke Node Komunitas
 
+"Node" di sini maksudnya **node lnd di mesin lain** — misalnya VPS anggota komunitas lain yang juga menjalankan `lnd-nux`.
+
+> **Bedakan dua langkah ini:**
+> - `connect` = berkenalan di jaringan P2P Lightning (saling tukar info jaringan/gossip). Belum ada dana, belum ada channel.
+> - `openchannel` (bagian 9) = baru mengunci dana dan membuka channel pembayaran. Ini langkah setelah connect.
+
 Dapatkan `pubkey@host:port` node tujuan dari komunitas, lalu:
 
 ```bash
@@ -280,6 +286,14 @@ lncli -n testnet --chain=nusacoin closechannel --force <funding_txid> <output_in
 | Channel tidak aktif setelah open | Butuh 3 konfirmasi (~18 menit). Cek `listchannels` → `active: false` + `pending`. |
 | Payment gagal / `no route` | Pastikan channel `active: true`, ada peer yang connect, dan likuiditas cukup di arah yang benar. |
 | `Fee estimation failed` di `nusacoin-cli` | Normal di awal chain — set manual: `nusacoin-cli settxfee 0.00001`. |
+
+### FAQ singkat
+
+**Q: Kalau baru node saya saja yang jalan, apakah bisa dipakai?**
+A: Daemon dan wallet-nya bisa jalan normal, tapi payment tidak bisa — payment butuh channel, dan channel butuh 2 pihak. Minimal 2 node + 1 channel untuk payment pertama terjadi. Kabar baik: 2 node bisa jalan di 1 mesin yang sama (datadir dan port P2P/RPC yang berbeda) untuk testing.
+
+**Q: Apa bedanya `connect` dan `openchannel`?**
+A: `connect` hanya berkenalan di jaringan P2P (belum ada dana). `openchannel` yang mengunci dana dan membuka channel pembayaran — dilakukan setelah connect.
 
 ---
 
