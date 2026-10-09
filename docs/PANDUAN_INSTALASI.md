@@ -183,6 +183,12 @@ lncli -n testnet --chain=nusacoin walletbalance
 
 Tunggu minimal **1 konfirmasi** sebelum dipakai buka channel. Block Nusacoin ~6 menit, jadi bersabarlah.
 
+> **Shortcut (opsional):** karena difficulty testnet saat ini sangat rendah, kamu bisa mempercepat dengan menambang 1 block sendiri (block yang kamu mine akan mengonfirmasi transaksi yang masih antre di mempool):
+> ```bash
+> nusacoin-cli -testnet generatetoaddress 1 "$(nusacoin-cli -testnet getnewaddress)"
+> ```
+> Catatan: ini hanya bisa diandalkan selama difficulty testnet masih sangat rendah. Kalau perintahnya tidak menghasilkan block, kembali ke cara normal — tunggu konfirmasi dari jaringan.
+
 ---
 
 ## 8. Connect ke Node Komunitas
