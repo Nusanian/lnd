@@ -209,6 +209,8 @@ lncli -n testnet --chain=nusacoin listpeers   # verifikasi
 Agar node kamu bisa ditemukan orang lain, pastikan port **9735** terbuka di firewall/VPS dan `listen=0.0.0.0:9735` sudah diset.
 
 > **Tentang `<host>`:** bisa berupa **alamat IP** (`203.0.113.10`) maupun **nama domain** seperti website (`node.komunitas.org`) — lnd akan me-resolve-nya via DNS. Format lengkapnya `<pubkey>@<host>:<port>`, contoh: `03a1b2...c3@node.komunitas.org:9735`.
+>
+> **Pasang domain sendiri:** cukup buat DNS **A record** (nama `node` → IP VPS) di pengaturan DNS domain kamu — tidak perlu ada website di domain itu, dan tidak ada setting khusus Lightning. **Tidak ada kaitannya dengan *DNS Seed*:** DNS seed dipakai base layer (`nusacoind`) untuk mencari peer P2P saat pertama start; domain di sini sekadar nama yang mudah diingat untuk node Lightning-mu.
 
 > **Tentang `<pubkey>`:** ini adalah *identity pubkey* node Lightning — "nomor telepon" node di jaringan (66 karakter hex, contoh: `03a1b2...`). Pubkey **dibuat otomatis saat wallet dibuat (langkah 5)** dan bisa dilihat kapan saja via `getinfo` → `"identity_pubkey"` (langkah 6). Pubkey diturunkan dari seed wallet, jadi seed yang sama = pubkey yang sama — itulah kenapa backup 24 kata juga mem-backup identitas node-mu. Untuk `connect`, yang dipakai adalah pubkey **node lawan** (minta ke komunitas); pubkey-mu sendiri dibagikan ke orang lain supaya mereka bisa connect ke kamu.
 
