@@ -208,6 +208,8 @@ lncli -n testnet --chain=nusacoin listpeers   # verifikasi
 
 Agar node kamu bisa ditemukan orang lain, pastikan port **9735** terbuka di firewall/VPS dan `listen=0.0.0.0:9735` sudah diset.
 
+> **Tentang `<pubkey>`:** ini adalah *identity pubkey* node Lightning — "nomor telepon" node di jaringan (66 karakter hex, contoh: `03a1b2...`). Pubkey **dibuat otomatis saat wallet dibuat (langkah 5)** dan bisa dilihat kapan saja via `getinfo` → `"identity_pubkey"` (langkah 6). Pubkey diturunkan dari seed wallet, jadi seed yang sama = pubkey yang sama — itulah kenapa backup 24 kata juga mem-backup identitas node-mu. Untuk `connect`, yang dipakai adalah pubkey **node lawan** (minta ke komunitas); pubkey-mu sendiri dibagikan ke orang lain supaya mereka bisa connect ke kamu.
+
 ---
 
 ## 9. Membuka Channel
