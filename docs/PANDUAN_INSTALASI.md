@@ -39,6 +39,8 @@ go build -o /usr/local/bin/lncli ./cmd/lncli
 
 ### 2b. Build `nusacoind` dari source (lama: 1–2 jam)
 
+> **Sudah punya `nusacoind`? LEWATI bagian ini.** Kalau di sistem sudah ada `nusacoind` yang jalan (misalnya node yang sudah sync), tidak perlu build ulang — langsung lanjut ke bagian 3 dan pastikan config-nya mengaktifkan RPC + ZMQ seperti contoh di sana. `lnd-nux` tinggal diarahkan ke node yang sudah ada tersebut.
+
 ```bash
 git clone https://github.com/TaobotX11/nusacoin
 cd nusacoin
