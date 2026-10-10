@@ -1475,7 +1475,7 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// chainName namespaces data/log directories and selects the
 	// backend node's config file base name (bitcoin.conf vs
 	// nusacoin.conf).
-	chainName := BitcoinChainName
+	chainName := cfg.chainName()
 
 	// When Nusacoin is the active chain, alias its chain config into
 	// the Bitcoin handle. The rest of the codebase only ever reads
@@ -1485,7 +1485,6 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	// This keeps the fork diff small and easy to rebase.
 	if nusacoinActive {
 		*cfg.Bitcoin = *cfg.Nusacoin
-		chainName = NusacoinChainName
 
 		// Default to the Nusacoin data directory for the bitcoind
 		// backend unless the user overrode it.
@@ -2066,6 +2065,18 @@ func (c *Config) graphDatabaseDir() string {
 		c.DataDir, defaultGraphSubDirname,
 		lncfg.NormalizeNetwork(c.ActiveNetParams.Name),
 	)
+}
+
+// chainName returns the directory name segment identifying the active chain
+// ("bitcoin" or "nusacoin"). It mirrors the nusacoinActive detection in
+// ValidateConfig, so database paths stay namespaced per chain even when
+// called outside of config validation (e.g. DefaultDatabaseBuilder).
+func (c *Config) chainName() string {
+	if c.Nusacoin.MainNet || c.Nusacoin.TestNet3 ||
+		c.Nusacoin.RegTest || c.Nusacoin.SigNet {
+		return NusacoinChainName
+	}
+	return BitcoinChainName
 }
 
 // ImplementationConfig returns the configuration of what actual implementations

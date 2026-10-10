@@ -3425,7 +3425,7 @@ func (r *rpcServer) GetInfo(_ context.Context,
 	network := lncfg.NormalizeNetwork(r.cfg.ActiveNetParams.Name)
 	activeChains := []*lnrpc.Chain{
 		{
-			Chain:   BitcoinChainName,
+			Chain:   r.cfg.chainName(),
 			Network: network,
 		},
 	}

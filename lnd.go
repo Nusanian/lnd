@@ -214,7 +214,7 @@ func Main(cfg *Config, lisCfg ListenerCfg, implCfg *ImplementationCfg,
 	}
 
 	ltndLog.InfoS(ctx, "Network Info",
-		"active_chain", strings.Title(BitcoinChainName),
+		"active_chain", strings.Title(cfg.chainName()),
 		"network", network)
 
 	// Enable http profiling server if requested.

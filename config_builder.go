@@ -1069,7 +1069,7 @@ func (d *DefaultDatabaseBuilder) BuildDatabase(
 
 	databaseBackends, err := cfg.DB.GetBackends(
 		ctx, cfg.graphDatabaseDir(), cfg.networkDir, filepath.Join(
-			cfg.Watchtower.TowerDir, BitcoinChainName,
+			cfg.Watchtower.TowerDir, cfg.chainName(),
 			lncfg.NormalizeNetwork(cfg.ActiveNetParams.Name),
 		), cfg.WtClient.Active, cfg.Watchtower.Active, d.logger,
 	)
