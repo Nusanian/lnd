@@ -426,11 +426,12 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 		// backend understands Taproot. If not, then all the default
 		// features can't be used.
 		//
-		// Nusacoin is exempt: its backend (nusacoind) predates
-		// Taproot and doesn't implement it, but lnd's default
-		// channel type is explicitly non-taproot and taproot
-		// channels are opt-in, so basic LN operation doesn't need
-		// it.
+		// Nusacoin is exempt: Taproot is not activated on Nusacoin
+		// (regardless of whether the backend binary contains the
+		// deployment code), and lnd's default channel type is
+		// explicitly non-taproot. Taproot channel types are rejected
+		// for Nusacoin in ValidateConfig until a real activation
+		// happens.
 		if !backendSupportsTaproot(chainConn) &&
 			!IsNusacoin(&cfg.ActiveNetParams) {
 
@@ -633,8 +634,8 @@ func NewPartialChainControl(cfg *Config) (*PartialChainControl, func(), error) {
 			return nil, nil, err
 		}
 		// Nusacoin is exempt, see the bitcoind path above:
-		// nusacoind predates Taproot, but lnd's defaults don't
-		// require it.
+		// Taproot is not activated on Nusacoin, and lnd's defaults
+		// don't require it.
 		if !backendSupportsTaproot(chainConn) &&
 			!IsNusacoin(&cfg.ActiveNetParams) {
 

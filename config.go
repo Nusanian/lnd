@@ -1565,6 +1565,22 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 		cfg.DataDir, defaultChainSubDirname, chainName,
 	)
 
+	if nusacoinActive {
+		// Taproot is not activated on Nusacoin. Explicitly prevent
+		// enabling taproot channel types until a real activation
+		// happens: newer nusacoind builds may list a (failed/expired)
+		// taproot deployment via getdeploymentinfo, which must not
+		// be mistaken for activation.
+		if cfg.ProtocolOptions.TaprootChans {
+			return nil, mkErr("simple taproot channels are not " +
+				"supported on nusacoin: taproot is not activated")
+		}
+		if cfg.ProtocolOptions.TaprootOverlayChans {
+			return nil, mkErr("taproot overlay channels are not " +
+				"supported on nusacoin: taproot is not activated")
+		}
+	}
+
 	// Ensure that the user didn't attempt to specify negative values for
 	// any of the autopilot params.
 	if cfg.Autopilot.MaxChannels < 0 {
