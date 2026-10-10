@@ -1496,14 +1496,19 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 	}
 
 	minRemoteDelay := funding.MinBtcRemoteDelay
+	minCLTVDelta := uint32(minTimeLockDelta)
 	if nusacoinActive {
 		// Scale the minimum CSV delay by the block time ratio so
 		// the time-based security property matches Bitcoin's
 		// 144 blocks (~24h): 240 Nusacoin blocks (~24h).
 		minRemoteDelay = chainreg.MinNusacoinRemoteDelay
+
+		// Same for the minimum CLTV delta floor: 24 Bitcoin blocks
+		// (~4h) ~= 40 Nusacoin blocks.
+		minCLTVDelta = chainreg.MinNusacoinCLTVDelta
 	}
 
-	err = cfg.Bitcoin.Validate(minTimeLockDelta, minRemoteDelay)
+	err = cfg.Bitcoin.Validate(minCLTVDelta, minRemoteDelay)
 	if err != nil {
 		return nil, mkErr("error validating chain params: %v", err)
 	}

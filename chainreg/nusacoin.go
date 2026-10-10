@@ -45,6 +45,10 @@ const DefaultNusacoinMaxLocalCSVDelay = 3360
 // ~= 240 Nusacoin blocks.
 const MinNusacoinRemoteDelay uint16 = 240
 
+// MinNusacoinCLTVDelta is the minimum CLTV delta we accept for incoming
+// HTLCs: 24 Bitcoin blocks (~4h) ~= 40 Nusacoin blocks.
+const MinNusacoinCLTVDelta uint32 = 40
+
 // DefaultNusacoinMinHTLCInMSat / DefaultNusacoinMinHTLCOutMSat mirror the
 // Bitcoin defaults; they are value-based, not block-time based.
 var (
