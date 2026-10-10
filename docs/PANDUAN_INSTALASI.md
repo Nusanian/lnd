@@ -277,7 +277,11 @@ lncli -n testnet --chain=nusacoin closechannel <funding_txid> <output_index>
 lncli -n testnet --chain=nusacoin closechannel --force <funding_txid> <output_index>
 ```
 
-> Catatan force-close: dana kamu dikunci oleh timelock (CSV delay) dan baru bisa dipakai setelah beberapa puluh block. Ini normal dan sesuai protokol Lightning — bukan bug.
+> **Catatan force-close — baca ini baik-baik:** dana kamu dikunci oleh timelock (CSV delay) dan baru bisa dipakai setelah delay terpenuhi. Ini normal dan sesuai protokol Lightning — bukan bug. Besaran delay:
+> - Minimal 240 block (~24 jam pada pace desain 6 menit/block).
+> - Maksimal 3360 block (~2 minggu pada pace desain).
+>
+> **Penting:** angka "jam/minggu" di atas memakai pace *desain* (6 menit/block). Pada pace *nyata* saat ini (~98 menit/block, terukur Sep–Okt 2026), 240 block ≈ 16 hari dan 3360 block ≈ 7,5 bulan. Ini **keputusan sadar tim**: timelock yang lebih panjang memberi lebih banyak waktu reaksi terhadap kecurangan (aman), dengan konsekuensi dana terkunci lebih lama (UX pahit). Jangan force-close kecuali benar-benar perlu.
 
 ---
 
