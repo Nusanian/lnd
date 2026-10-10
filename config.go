@@ -1539,6 +1539,11 @@ func ValidateConfig(cfg Config, interceptor signal.Interceptor, fileParser,
 				"credentials for bitcoind: %v", err)
 		}
 	case neutrinoBackendName:
+		if nusacoinActive {
+			return nil, mkErr("neutrino does not support nusacoin " +
+				"(X11 PoW headers fail SHA256d verification), " +
+				"use --nusacoin.node=bitcoind")
+		}
 		// No need to get RPC parameters.
 
 	case "nochainbackend":
