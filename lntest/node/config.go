@@ -128,6 +128,11 @@ type BaseNodeConfig struct {
 	// store the current test case for simpler postmortem debugging.
 	LogFilenamePrefix string
 
+	// ChainName is the directory name segment identifying the chain
+	// under test ("bitcoin" or "nusacoin"). It defaults to
+	// lnd.BitcoinChainName when empty.
+	ChainName string
+
 	NetParams         *chaincfg.Params
 	BackendCfg        BackendConfig
 	BaseDir           string
@@ -198,9 +203,18 @@ func (cfg BaseNodeConfig) DBPath() string {
 	return filepath.Join(cfg.DBDir(), "channel.db")
 }
 
+// chainName returns the directory name segment identifying the chain
+// under test, defaulting to lnd.BitcoinChainName when not set.
+func (cfg BaseNodeConfig) chainName() string {
+	if cfg.ChainName != "" {
+		return cfg.ChainName
+	}
+	return lnd.BitcoinChainName
+}
+
 func (cfg BaseNodeConfig) ChanBackupPath() string {
 	return filepath.Join(
-		cfg.DataDir, "chain", lnd.BitcoinChainName,
+		cfg.DataDir, "chain", cfg.chainName(),
 		fmt.Sprintf(
 			"%v/%v", cfg.NetParams.Name,
 			chanbackup.DefaultBackupFileName,
