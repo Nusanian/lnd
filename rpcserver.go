@@ -1509,8 +1509,11 @@ func (r *rpcServer) SendCoins(ctx context.Context,
 			// where we'll send this reserved value back to. This
 			// ensures this is an address the wallet knows about,
 			// allowing us to pass the reserved value check.
+			//
+			// NUX: P2WKH instead of P2TR until Taproot is activated
+			// on Nusacoin (see lnwallet/wallet.go ChangeAddr).
 			changeAddr, err := r.server.cc.Wallet.NewAddress(
-				lnwallet.TaprootPubkey, true,
+				lnwallet.WitnessPubKey, true,
 				lnwallet.DefaultAccountName,
 			)
 			if err != nil {

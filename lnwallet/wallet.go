@@ -1021,8 +1021,15 @@ func (l *LightningWallet) handleFundingReserveRequest(req *InitFundingReserveMsg
 			SubtractFees: req.SubtractFees,
 			FeeRate:      req.FundingFeePerKw,
 			ChangeAddr: func() (address.Address, error) {
+				// NUX: Use P2WKH instead of P2TR for the change address
+				// until Taproot is activated on Nusacoin. Spending a
+				// P2TR output pre-Taproot is rejected by the network
+				// ("Witness version reserved for soft-fork upgrades"),
+				// which silently breaks funding transaction broadcast.
+				// Revert to TaprootPubkey once the v25.2 codebase with
+				// Taproot goes live.
 				return l.NewAddress(
-					TaprootPubkey, true, DefaultAccountName,
+					WitnessPubKey, true, DefaultAccountName,
 				)
 			},
 			Musig2: req.CommitType.IsTaproot(),
