@@ -49,7 +49,7 @@ jobs:
         run: |
           LDFLAGS="-s -w -buildid= -X github.com/lightningnetwork/lnd/build.Commit=${{ env.COMMIT }}"
           mkdir -p dist
-          go build -trimpath -ldflags "$LDFLAGS" -o dist/lnd .
+          go build -trimpath -ldflags "$LDFLAGS" -o dist/lnd ./cmd/lnd
           go build -trimpath -ldflags "$LDFLAGS" -o dist/lncli ./cmd/lncli
 
       - name: smoke test binary (amd64)
