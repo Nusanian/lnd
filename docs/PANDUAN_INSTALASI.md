@@ -1,64 +1,110 @@
 # Panduan Instalasi lnd-nux (Lightning Network untuk Nusacoin)
 
-Panduan ini menjelaskan cara menjalankan **node Lightning Network Nusacoin** (`lnd-nux`) di **testnet**, langkah demi langkah, untuk operator komunitas yang bukan expert. Semua perintah di bawah ini sudah diverifikasi bekerja di regtest.
+Panduan langkah-demi-langkah menjalankan **node Lightning Network Nusacoin** (`lnd-nux`) di **testnet**. Ditulis untuk operator komunitas tingkat pemula-menengah — tidak perlu jadi expert Bitcoin/Lightning untuk mengikuti.
 
-> **Catatan:** `lnd-nux` adalah fork LND yang di-porting untuk chain Nusacoin (X11 PoW). Nusacoin **belum** mengaktifkan Taproot — untuk saat ini `lnd-nux` disesuaikan sehingga channel/payment standar (non-taproot) berjalan normal. Taproot masuk roadmap upgrade codebase ke depan. Invoice testnet diawali `lntn`, alamat on-chain diawali `tn1`.
+> **Istilah penting:** satuan terkecil Nusacoin disebut **nusan** (bukan "sats"). 1 NUX = 100.000.000 nusan.
+
+> **Status Taproot:** Nusacoin **belum** mengaktifkan Taproot (masuk roadmap upgrade codebase). Mulai versi `v0.0.0-nux-test3`, `lnd-nux` otomatis memakai alamat SegWit v0 (P2WKH) agar kompatibel — kamu tidak perlu setting apa-apa.
 
 ---
 
-## 1. Prasyarat Sistem
+## Daftar Isi
+
+1. [Gambaran Besar](#1-gambaran-besar)
+2. [Prasyarat](#2-prasyarat)
+3. [Download Binary (Cara Cepat)](#3-download-binary-cara-cepat)
+4. [Build dari Source (Alternatif)](#4-build-dari-source-alternatif)
+5. [Menjalankan nusacoind (Testnet)](#5-menjalankan-nusacoind-testnet)
+6. [Konfigurasi lnd-nux](#6-konfigurasi-lnd-nux)
+7. [Menjalankan lnd & Membuat Wallet](#7-menjalankan-lnd--membuat-wallet)
+8. [Isi Saldo On-Chain](#8-isi-saldo-on-chain)
+9. [Connect & Buka Channel](#9-connect--buka-channel)
+10. [Wumbo Channels (Channel Besar)](#10-wumbo-channels-channel-besar)
+11. [Membayar via Lightning](#11-membayar-via-lightning)
+12. [Menutup Channel](#12-menutup-channel)
+13. [Node Kedua di Mesin yang Sama (Opsional)](#13-node-kedua-di-mesin-yang-sama-opsional)
+14. [Troubleshooting](#14-troubleshooting)
+15. [Referensi Cepat](#15-referensi-cepat)
+
+---
+
+## 1. Gambaran Besar
+
+Bayangkan Lightning Network seperti **tabungan bersama** antara dua orang:
+
+- Kamu dan temanmu masing-masing setor dana ke sebuah "brankas bersama" (channel).
+- Setelah brankas dibuka, kalian bisa saling bayar **berkali-kali, instan, hampir tanpa fee** — tanpa menunggu block baru.
+- Kapan pun, salah satu bisa menutup brankas dan mengambil dananya kembali ke dompet biasa.
+
+Untuk ini kamu butuh dua program:
+
+| Program | Peran | Analogi |
+|---------|-------|---------|
+| `nusacoind` | Full node blockchain Nusacoin — mencatat semua transaksi on-chain | Buku kas utama |
+| `lnd` (lnd-nux) | Node Lightning — mengelola channel & payment kilat | Aplikasi tabungan bersama |
+
+`lnd` tidak menyimpan blockchain sendiri — dia "numpang baca" ke `nusacoind` via RPC dan menerima notifikasi block baru via ZMQ.
+
+---
+
+## 2. Prasyarat
 
 - **OS:** Linux 64-bit (Ubuntu/Debian 22.04+ disarankan)
-- **RAM:** minimal 2 GB (cukup untuk testnet)
+- **RAM:** minimal 2 GB
 - **Disk:** minimal 10 GB kosong
-- **Koneksi internet** yang stabil (node harus online terus agar channel aman)
+- **Internet** stabil (node Lightning harus online terus — kalau offline lama, channel bisa bermasalah)
+- `nusacoind` sudah terinstall (komunitas sudah diedukasi untuk install dari GitHub masing-masing)
 
 ---
 
-## 2. Mendapatkan Binary
+## 3. Download Binary (Cara Cepat)
 
-Ada dua program yang dibutuhkan:
-
-| Program | Fungsi | Sumber |
-|---------|--------|--------|
-| `nusacoind` + `nusacoin-cli` | Backend blockchain (full node Nusacoin) | Build dari https://github.com/TaobotX11/nusacoin, atau minta ke komunitas |
-| `lnd` + `lncli` | Node Lightning (`lnd-nux`) | Build dari https://github.com/Nusanian/lnd branch `nusacoin`, atau minta ke komunitas |
-
-### 2a. Build `lnd-nux` dari source (butuh Go)
+Ini cara yang disarankan — tidak perlu build sendiri.
 
 ```bash
-# Install Go (cek versi yang diminta file go.mod terlebih dahulu)
-# https://go.dev/dl/
+mkdir -p ~/lnd-nux && cd ~/lnd-nux
 
+# Download binary + checksum (ganti amd64 -> arm64 kalau pakai ARM/Raspberry Pi)
+wget https://github.com/Nusanian/lnd/releases/download/v0.0.0-nux-test3/lnd-nux-v0.0.0-nux-test3-linux-amd64.tar.gz
+wget https://github.com/Nusanian/lnd/releases/download/v0.0.0-nux-test3/lnd-nux-v0.0.0-nux-test3-linux-amd64.tar.gz.sha256
+
+# Verifikasi checksum (WAJIB — memastikan file tidak korup/rusak)
+sha256sum -c lnd-nux-v0.0.0-nux-test3-linux-amd64.tar.gz.sha256
+# harus keluar: lnd-nux-v0.0.0-nux-test3-linux-amd64.tar.gz: OK
+
+# Extract (isinya langsung lnd + lncli, tanpa subfolder)
+tar -xzf lnd-nux-v0.0.0-nux-test3-linux-amd64.tar.gz
+
+# Cek versi
+./lnd --version
+# harus keluar: lnd version 0.21.99-beta commit=b9e46ac (atau lebih baru)
+```
+
+> **Penting:** jangan rename file `.tar.gz` sebelum verifikasi checksum — nama file harus sama persis seperti di release agar `sha256sum -c` bekerja.
+
+> **Versi minimum:** pakai `v0.0.0-nux-test3` atau lebih baru. Versi ini memuat fix penting: change address otomatis memakai P2WKH (SegWit v0) karena Taproot belum aktif di Nusacoin. Versi lama membuat change P2TR yang tidak bisa di-spend — transaksi funding akan ditolak network secara diam-diam.
+
+---
+
+## 4. Build dari Source (Alternatif)
+
+Hanya kalau kamu mau build sendiri (butuh Go):
+
+```bash
 git clone https://github.com/Nusanian/lnd lnd-nux
 cd lnd-nux
-git checkout nusacoin          # PENTING: jangan pakai master
-go build -o /usr/local/bin/lnd ./cmd/lnd
-go build -o /usr/local/bin/lncli ./cmd/lncli
+git checkout nusacoin          # PENTING: jangan pakai master!
+go build -o lnd ./cmd/lnd
+go build -o lncli ./cmd/lncli
 ```
-
-### 2b. Build `nusacoind` dari source (lama: 1–2 jam)
-
-> **Sudah punya `nusacoind`? LEWATI bagian ini.** Kalau di sistem sudah ada `nusacoind` yang jalan (misalnya node yang sudah sync), tidak perlu build ulang — langsung lanjut ke bagian 3 dan pastikan config-nya mengaktifkan RPC + ZMQ seperti contoh di sana. `lnd-nux` tinggal diarahkan ke node yang sudah ada tersebut.
-
-```bash
-git clone https://github.com/TaobotX11/nusacoin
-cd nusacoin
-./autogen.sh
-./configure --without-gui --disable-tests --disable-bench \
-    --without-sqlite --with-zmq --with-incompatible-bdb
-make -j$(nproc)
-# Binary ada di: src/nusacoind dan src/nusacoin-cli
-sudo cp src/nusacoind src/nusacoin-cli /usr/local/bin/
-```
-
-> Butuh ZMQ (`--with-zmq`) — `lnd-nux` **wajib** menerima notifikasi block/transaksi via ZMQ dari `nusacoind`.
 
 ---
 
-## 3. Menjalankan `nusacoind` (Testnet)
+## 5. Menjalankan nusacoind (Testnet)
 
-Buat file config `~/.nusacoin/nusacoin.conf`:
+`lnd-nux` butuh `nusacoind` yang sudah sync testnet dengan **txindex** dan **ZMQ** aktif.
+
+Buat/edit `~/.nusacoin/nusacoin.conf`:
 
 ```ini
 server=1
@@ -73,20 +119,24 @@ zmqpubrawblock=tcp://127.0.0.1:28332
 zmqpubrawtx=tcp://127.0.0.1:28333
 ```
 
-Jalankan dan tunggu sinkronisasi selesai:
+**Yang wajib diperhatikan:**
+- `txindex=1` — lnd butuh mencari transaksi lama. (Catatan: `nusacoind` versi ini tidak punya perintah `getindexinfo`, jadi verifikasi via config dan log, bukan via RPC.)
+- **Port ZMQ block dan tx HARUS beda** (di contoh: 28332 vs 28333). Kalau disamakan, `lnd` menolak start.
+- `[test]` berarti setting ini hanya untuk testnet — mainnet tidak ikut berubah.
+
+Jalankan dan tunggu sync:
 
 ```bash
 nusacoind -daemon
-# Cek progres (100% = sudah sync):
-nusacoin-cli -rpcuser=nuxrpc -rpcpassword=GANTI_DENGAN_PASSWORD_YANG_KUAT_DAN_ACAK \
-    -rpcport=18332 getblockchaininfo | grep verificationprogress
+# Cek progres (1.0 = sudah sync 100%):
+nusacoin-cli -rpcuser=nuxrpc -rpcpassword=PASSWORD_KAMU -rpcport=18332 getblockchaininfo | grep verificationprogress
 ```
 
-> Sinkronisasi awal testnet bisa memakan waktu lama (jam). `lnd-nux` baru bisa jalan setelah backend selesai sync.
+> Sync awal testnet bisa makan waktu berjam-jam. `lnd` baru bisa jalan setelah backend 100% sync.
 
 ---
 
-## 4. Konfigurasi `lnd-nux` (Testnet)
+## 6. Konfigurasi lnd-nux
 
 Buat file `~/.lnd/lnd.conf`:
 
@@ -99,7 +149,6 @@ rpclisten=127.0.0.1:10009
 listen=0.0.0.0:9735
 
 [Nusacoin]
-nusacoin.active=1
 nusacoin.testnet=1
 nusacoin.node=bitcoind
 
@@ -109,219 +158,275 @@ bitcoind.rpcuser=nuxrpc
 bitcoind.rpcpass=GANTI_DENGAN_PASSWORD_YANG_KUAT_DAN_ACAK
 bitcoind.zmqpubrawblock=tcp://127.0.0.1:28332
 bitcoind.zmqpubrawtx=tcp://127.0.0.1:28333
+
+[protocol]
+protocol.wumbo-channels=true
 ```
 
-**Penjelasan singkat tiap bagian:**
-- `[Application Options]` — nama tampilan node kamu (`alias`), dan port layanan lnd (10009 = RPC, 8080 = REST, 9735 = P2P antar node Lightning).
-- `[Nusacoin]` — mengaktifkan chain Nusacoin di jaringan **testnet**.
-- `[Bitcoind]` — cara lnd berbicara ke `nusacoind`: RPC untuk query + **ZMQ untuk notifikasi block** (keduanya wajib, dan port ZMQ block & transaksi harus beda).
-
-> Nama section-nya tetap `[Bitcoind]` walaupun backend-nya `nusacoind` — itu nama modul konektornya, bukan nama coin-nya.
+**Penjelasan per bagian (untuk yang penasaran):**
+- `[Application Options]` — `alias` adalah nama tampilan node-mu di jaringan. Tiga port: `10009` (perintah `lncli`), `8080` (API REST), `9735` (komunikasi antar node Lightning).
+- `[Nusacoin]` — mengaktifkan chain Nusacoin mode testnet. (Jangan tambahkan `nusacoin.active=1` — itu sintaks lama yang sudah deprecated.)
+- `[Bitcoind]` — cara lnd ngobrol ke `nusacoind`. Nama section-nya tetap `[Bitcoind]` walau backend-nya Nusacoin — itu nama modul konektornya, bukan nama koinnya. RPC untuk tanya-jawab, ZMQ untuk dapat kabar block baru secara instan.
+- `[protocol]` — mengaktifkan **wumbo channels** (channel besar, lihat bagian 10). **Catatan penting:** opsi yang pakai nama section (seperti `protocol.*` dan `bitcoind.*`) wajib ditulis format **dotted** (`protocol.wumbo-channels`, bukan `wumbo-channels` saja) — kalau tidak, lnd error `unknown option`.
 
 ---
 
-## 5. Membuat Wallet
+## 7. Menjalankan lnd & Membuat Wallet
 
-Jalankan lnd (biarkan berjalan di terminal / pakai `screen` / `systemd`):
+Jalankan lnd (biarkan jalan — pakai `screen`, `tmux`, atau `nohup` agar tidak mati saat terminal ditutup):
 
 ```bash
-lnd
+nohup ~/lnd-nux/lnd > ~/lnd-nux/lnd.log 2>&1 &
 ```
 
-Di terminal **lain**, buat wallet baru (hanya sekali, saat pertama jalan):
+Di terminal **lain**, buat wallet (hanya sekali, saat pertama kali):
 
 ```bash
-lncli -n testnet --chain=nusacoin create
+~/lnd-nux/lncli -n testnet --chain=nusacoin create
 ```
 
 Ikuti panduannya:
-1. Masukkan **password wallet** (2x) — catat baik-baik, hilang = dana hilang.
-2. Saat ditanya seed mnemonic: jawab `n` untuk membuat seed baru (atau `y` kalau restore).
-3. Lewati cipher seed passphrase (Enter saja) kecuali kamu paham fungsinya.
-4. Ketik `YES` untuk konfirmasi. **Simpan 24 kata seed di tempat aman, jangan di-share ke siapa pun!**
+1. Masukkan **password wallet** 2x — catat baik-baik. Lupa password = dana tidak bisa dibuka.
+2. Seed mnemonic: jawab `n` untuk bikin seed baru (atau `y` kalau restore dari backup).
+3. Cipher seed passphrase: Enter saja (kosongkan) kecuali kamu paham fungsinya.
+4. Ketik `YES`. **Simpan 24 kata seed di tempat AMAN, jangan pernah dibagikan ke siapa pun!**
 
-> ⚠️ **Selalu tambahkan `--chain=nusacoin`** di setiap perintah `lncli`. Tanpa itu, `lncli` mencari file di folder `bitcoin` dan akan error `unable to read macaroon path`.
+> ⚠️ **Selalu tambahkan `-n testnet --chain=nusacoin`** di setiap perintah `lncli`. Tanpa itu, `lncli` mencari data di folder yang salah dan error.
 
-Buka wallet yang sudah ada (setiap kali lnd restart):
+Setiap kali lnd restart, buka wallet-nya:
 
 ```bash
-lncli -n testnet --chain=nusacoin unlock
+~/lnd-nux/lncli -n testnet --chain=nusacoin unlock
 # masukkan password wallet
 ```
 
----
-
-## 6. Cek Status & Sinkronisasi
+Supaya tidak mengetik panjang tiap kali, tambahkan alias ke `~/.bashrc`:
 
 ```bash
-lncli -n testnet --chain=nusacoin getinfo
+alias lncli1='~/lnd-nux/lncli -n testnet --chain=nusacoin'
 ```
 
-Yang perlu diperhatikan:
-- `"synced_to_chain": true` → node siap dipakai.
-- `"block_height"` → harus sama dengan tinggi block testnet terkini.
-- `"identity_pubkey"` → identitas node kamu (dibagikan saat connect).
-
-Kalau muncul `server is still in the process of starting`, tunggu — lnd masih sinkronisasi.
+Lalu `source ~/.bashrc`. Mulai sekarang cukup ketik `lncli1 ...`.
 
 ---
 
-## 7. Isi Saldo On-Chain (Testnet NUX)
+## 8. Isi Saldo On-Chain
 
-Minta alamat deposit:
-
-```bash
-lncli -n testnet --chain=nusacoin newaddress p2wkh
-# contoh hasil: tn1q...
-```
-
-Kirim **tNUX** (koin testnet, tidak bernilai) ke alamat itu dari faucet/komunitas, lalu cek:
+Minta alamat deposit (pakai tipe `p2wkh` — SegWit v0, kompatibel penuh):
 
 ```bash
-lncli -n testnet --chain=nusacoin walletbalance
+lncli1 newaddress p2wkh
+# contoh: tn1q...
 ```
 
-Tunggu minimal **1 konfirmasi** sebelum dipakai buka channel. Block Nusacoin ~6 menit, jadi bersabarlah.
+Kirim **tNUX** (koin testnet, tidak ada nilainya) ke alamat itu, lalu cek:
 
-> **Shortcut (opsional):** karena difficulty testnet saat ini sangat rendah, kamu bisa mempercepat dengan menambang 1 block sendiri (block yang kamu mine akan mengonfirmasi transaksi yang masih antre di mempool):
+```bash
+lncli1 walletbalance
+```
+
+Tunggu minimal **1 konfirmasi** sebelum dipakai. Block Nusacoin ~6 menit.
+
+> **Shortcut (opsional):** difficulty testnet saat ini sangat rendah, jadi kamu bisa mine 1 block sendiri untuk mempercepat konfirmasi:
 > ```bash
-> nusacoin-cli -testnet generatetoaddress 1 "$(nusacoin-cli -testnet getnewaddress)"
+> nusacoin-cli -testnet generatetoaddress 1 $(nusacoin-cli -testnet getnewaddress)
 > ```
-> Catatan: ini hanya bisa diandalkan selama difficulty testnet masih sangat rendah. Kalau perintahnya tidak menghasilkan block, kembali ke cara normal — tunggu konfirmasi dari jaringan.
+> Ini hanya bisa diandalkan selama difficulty testnet masih rendah.
+
+> **Coinbase maturity:** koin hasil mining baru bisa dipakai setelah **10 block** (bukan 100 seperti Bitcoin). Jadi kalau kamu mine sendiri, tunggu 10 block sebelum dananya spendable.
 
 ---
 
-## 8. Connect ke Node Komunitas
+## 9. Connect & Buka Channel
 
-"Node" di sini maksudnya **node lnd di mesin lain** — misalnya VPS anggota komunitas lain yang juga menjalankan `lnd-nux`.
-
-> **Bedakan dua langkah ini:**
-> - `connect` = berkenalan di jaringan P2P Lightning (saling tukar info jaringan/gossip). Belum ada dana, belum ada channel.
-> - `openchannel` (bagian 9) = baru mengunci dana dan membuka channel pembayaran. Ini langkah setelah connect.
-
-Dapatkan `pubkey@host:port` node tujuan dari komunitas, lalu:
+**Langkah 1 — Connect (berkenalan):** dapatkan `pubkey@host:port` node tujuan dari komunitas.
 
 ```bash
-lncli -n testnet --chain=nusacoin connect <pubkey>@<host>:9735
-lncli -n testnet --chain=nusacoin listpeers   # verifikasi
+lncli1 connect <pubkey>@<host>:9735
+lncli1 listpeers   # verifikasi sudah connect
 ```
 
-Agar node kamu bisa ditemukan orang lain, pastikan port **9735** terbuka di firewall/VPS dan `listen=0.0.0.0:9735` sudah diset.
+> `connect` hanya berkenalan di jaringan P2P — belum ada dana yang dikunci. `<host>` bisa IP (`203.0.113.10`) atau domain (`node.komunitas.org`).
 
-> **Tentang `<host>`:** bisa berupa **alamat IP** (`203.0.113.10`) maupun **nama domain** seperti website (`node.komunitas.org`) — lnd akan me-resolve-nya via DNS. Format lengkapnya `<pubkey>@<host>:<port>`, contoh: `03a1b2...c3@node.komunitas.org:9735`.
->
-> **Pasang domain sendiri:** cukup buat DNS **A record** (nama `node` → IP VPS) di pengaturan DNS domain kamu — tidak perlu ada website di domain itu, dan tidak ada setting khusus Lightning. **Tidak ada kaitannya dengan *DNS Seed*:** DNS seed dipakai base layer (`nusacoind`) untuk mencari peer P2P saat pertama start; domain di sini sekadar nama yang mudah diingat untuk node Lightning-mu.
+**Langkah 2 — Open channel (kunci dana):**
 
-> **Tentang `<pubkey>`:** ini adalah *identity pubkey* node Lightning — "nomor telepon" node di jaringan (66 karakter hex, contoh: `03a1b2...`). Pubkey **dibuat otomatis saat wallet dibuat (langkah 5)** dan bisa dilihat kapan saja via `getinfo` → `"identity_pubkey"` (langkah 6). Pubkey diturunkan dari seed wallet, jadi seed yang sama = pubkey yang sama — itulah kenapa backup 24 kata juga mem-backup identitas node-mu. Untuk `connect`, yang dipakai adalah pubkey **node lawan** (minta ke komunitas); pubkey-mu sendiri dibagikan ke orang lain supaya mereka bisa connect ke kamu.
+```bash
+lncli1 openchannel --node_key=<pubkey_tujuan> --local_amt=<jumlah_nusan>
+```
+
+Contoh — buka channel 10.000.000 nusan (0,1 NUX):
+
+```bash
+lncli1 openchannel --node_key=03abc...def --local_amt=10000000
+```
+
+Perintah ini mengembalikan `funding_txid` — ID transaksi yang mengunci dana ke channel. Transaksi ini dibuat **saat** proses open (bukan transaksi yang sudah ada sebelumnya).
+
+**Berapa konfirmasi sampai aktif?** Tergantung ukuran channel (otomatis):
+
+| Ukuran channel | Konfirmasi |
+|----------------|------------|
+| Kecil (di bawah ~0,016 NUX) | 1 |
+| Sedang | 2–3 |
+| Besar / wumbo | hingga 6 |
+
+Cek status:
+
+```bash
+lncli1 listchannels
+# "active": true berarti siap dipakai
+```
+
+> **Batas default:** tanpa wumbo, channel maksimal **16.777.215 nusan** (~0,167 NUX). Kalau butuh lebih besar, lihat bagian 10.
 
 ---
 
-## 9. Membuka Channel
+## 10. Wumbo Channels (Channel Besar)
 
-```bash
-lncli -n testnet --chain=nusacoin openchannel \
-    --node_key=<pubkey_tujuan> \
-    --local_amt=<jumlah_dalam_satoshi>
+"Wumbo" = channel jumbo, melebihi batas default. Istilahnya dari Spongebob (artinya "besar") 😄
+
+**Kenapa ada batas?** Di awal Lightning, batas kecil dipasang sebagai pengaman — kalau ada bug, dana yang berisiko tidak terlalu besar. Wumbo adalah cara kedua node sepakat untuk melonggarkan batas itu.
+
+**Cara kerja:** saat open channel, kedua node saling bertukar "feature bit" (tanda "saya support channel besar"). Kalau **keduanya** setuju, limit naik sampai **10 NUX**. Kalau salah satunya tidak setuju, tetap pakai batas default.
+
+**Syarat:** tambahkan ini di `lnd.conf` **kedua** node (sudah termasuk di contoh bagian 6):
+
+```ini
+[protocol]
+protocol.wumbo-channels=true
 ```
 
-Contoh: buka channel 1.000.000 satoshi (0,01 tNUX):
+Lalu restart lnd di kedua sisi.
 
-```bash
-lncli -n testnet --chain=nusacoin openchannel \
-    --node_key=03abc...def \
-    --local_amt=1000000
-```
-
-- Channel butuh **3 konfirmasi** (~18 menit di testnet) sebelum aktif.
-- Cek status: `lncli -n testnet --chain=nusacoin listchannels` → `"active": true` berarti siap dipakai.
-- Biaya buka channel = fee transaksi on-chain biasa.
+> Keputusan batas channel untuk **mainnet** (apakah default perlu dinaikkan atau cukup dokumentasikan wumbo) masih didiskusikan — akan diputuskan sebelum mainnet launch.
 
 ---
 
-## 10. Membayar via Invoice (Lightning Payment)
+## 11. Membayar via Lightning
 
-**Penerima** membuat invoice:
+**Penerima** bikin invoice:
 
 ```bash
-lncli -n testnet --chain=nusacoin addinvoice --amt=1000 --memo="kopi"
-# catat "payment_request" yang diawali lntn...
+lncli1 addinvoice --amt=100000 --memo="kopi"
+# catat "payment_request" (diawali lntn...)
 ```
 
 **Pengirim** membayar:
 
 ```bash
-lncli -n testnet --chain=nusacoin payinvoice --force <payment_request>
+lncli1 payinvoice <payment_request>
 ```
 
-Hasil `SUCCEEDED` = pembayaran lunas dalam hitungan detik, tanpa menunggu block.
+Hasil `SUCCEEDED` = lunas dalam hitungan detik, tanpa menunggu block. Fee antar node biasanya sangat kecil atau nol.
+
+> Prefix invoice testnet Nusacoin adalah `lntn` (`ln` + `t` testnet + `n` nusacoin). Di mainnet nanti menjadi `lnn`.
 
 ---
 
-## 11. Menutup Channel
+## 12. Menutup Channel
 
 Lihat dulu `channel_point` (format `txid:output_index`):
 
 ```bash
-lncli -n testnet --chain=nusacoin listchannels
+lncli1 listchannels
 ```
 
-**Tutup kooperatif** (disarankan — murah & dana langsung kembali):
+**Tutup kooperatif** (disarankan — murah, dana langsung kembali):
 
 ```bash
-lncli -n testnet --chain=nusacoin closechannel <funding_txid> <output_index>
+lncli1 closechannel <funding_txid> <output_index>
 ```
 
-**Tutup paksa / force-close** (kalau lawan offline atau tidak kooperatif):
+**Force-close** (kalau lawan offline / tidak kooperatif):
 
 ```bash
-lncli -n testnet --chain=nusacoin closechannel --force <funding_txid> <output_index>
+lncli1 closechannel --force <funding_txid> <output_index>
 ```
 
-> **Catatan force-close — baca ini baik-baik:** dana kamu dikunci oleh timelock (CSV delay) dan baru bisa dipakai setelah delay terpenuhi. Ini normal dan sesuai protokol Lightning — bukan bug. Besaran delay:
-> - Minimal 240 block (~24 jam pada pace desain 6 menit/block).
-> - Maksimal 3360 block (~2 minggu pada pace desain).
->
-> **Penting:** angka "jam/minggu" di atas memakai pace *desain* (6 menit/block). Pada pace *nyata* saat ini (~98 menit/block, terukur Sep–Okt 2026), 240 block ≈ 16 hari dan 3360 block ≈ 7,5 bulan. Ini **keputusan sadar tim**: timelock yang lebih panjang memberi lebih banyak waktu reaksi terhadap kecurangan (aman), dengan konsekuensi dana terkunci lebih lama (UX pahit). Jangan force-close kecuali benar-benar perlu.
+> ⚠️ **Force-close mengunci dana sementara** (timelock). Minimal 240 block, maksimal 3360 block. Pada pace desain (6 menit/block) itu ~1 hari sampai ~2 minggu; pada pace nyata saat ini yang lebih lambat, bisa lebih lama. Ini normal sesuai protokol — bukan bug. Jangan force-close kecuali benar-benar perlu.
 
 ---
 
-## 12. Troubleshooting
+## 13. Node Kedua di Mesin yang Sama (Opsional)
+
+Untuk testing, dua node bisa jalan di 1 VPS (data dan port terpisah):
+
+```bash
+# Node 2: lnddir dan port berbeda
+nohup ~/lnd-nux/lnd --lnddir=~/.lnd2 --rpcserver=127.0.0.1:10010 > ~/lnd-nux/lnd2.log 2>&1 &
+```
+
+Tambahkan alias:
+
+```bash
+alias lncli2='~/lnd-nux/lncli --lnddir=~/.lnd2 --rpcserver=127.0.0.1:10010 -n testnet --chain=nusacoin'
+```
+
+> Node 2 **wajib** pakai `--rpcserver` eksplisit, karena `lncli` default mencari di port 10009 (milik node 1).
+
+Port P2P node 2 juga harus beda — tambahkan di `~/.lnd2/lnd.conf`:
+```ini
+[Application Options]
+listen=0.0.0.0:9736
+rpclisten=127.0.0.1:10010
+```
+
+> Kalau membuka banyak channel test dan kena error `Number of pending channels exceed maximum`, tambahkan `--maxpendingchannels=5` saat start lnd (default-nya 1).
+
+---
+
+## 14. Troubleshooting
 
 | Gejala | Penyebab & Solusi |
 |--------|-------------------|
-| `lncli` error `unable to read macaroon path .../bitcoin/...` | Lupa `--chain=nusacoin`. Selalu sertakan di tiap perintah `lncli`. |
-| `server is still in the process of starting` | lnd masih sync. Cek `getinfo` berkala sampai `synced_to_chain: true`. |
-| lnd tidak mau start / macet di awal | Pastikan `nusacoind` sudah fully-synced dan ZMQ aktif. Cek log lnd (`~/.lnd/logs/`). |
-| `node backend does not support taproot` | Binary `lnd` terlalu lama — pakai build terbaru dari branch `nusacoin`. |
-| Channel tidak aktif setelah open | Butuh 3 konfirmasi (~18 menit). Cek `listchannels` → `active: false` + `pending`. |
-| Payment gagal / `no route` | Pastikan channel `active: true`, ada peer yang connect, dan likuiditas cukup di arah yang benar. |
-| `Fee estimation failed` di `nusacoin-cli` | Normal di awal chain — set manual: `nusacoin-cli settxfee 0.00001`. |
+| `unable to read macaroon path .../bitcoin/...` | Lupa `--chain=nusacoin`. Selalu sertakan di tiap perintah `lncli` (atau pakai alias). |
+| `server is still in the process of starting` | lnd masih sync. Tunggu sampai `getinfo` menunjukkan `"synced_to_chain": true`. |
+| `synced_to_chain: false` padahal backend sync | Testnet NUX mining-nya sporadis. lnd menganggap "belum sync" kalau block terakhir lebih tua dari 2 jam. **Solusi:** mine 1 block baru via `generatetoaddress` — langsung jadi `true`. Ini bukan error. |
+| lnd tidak mau start | Cek: (1) `nusacoind` sudah 100% sync? (2) Port ZMQ block & tx beda? (3) Lihat log `~/lnd-nux/lnd.log`. |
+| `unknown option: wumbo-channels` | Opsi ber-namespace wajib format dotted: `protocol.wumbo-channels=true` (bukan `wumbo-channels=true`). |
+| Channel tidak aktif setelah open | Butuh konfirmasi (1–6 block tergantung ukuran, lihat tabel bagian 9). Cek `listchannels`. |
+| `funding amount is too large, the max channel size is: 0.16777215 BTC` | Melebihi batas default 16.777.215 nusan. Aktifkan wumbo di kedua node (bagian 10). (Label "BTC" di pesan error ini akan diganti "NUX" di versi mendatang.) |
+| Payment gagal / `no route` | Pastikan channel `active: true`, peer connect, dan likuiditas cukup di arah yang benar. |
+| `Number of pending channels exceed maximum` | Tambahkan `--maxpendingchannels=5` saat start lnd (untuk testing). |
+| Funding tx tidak masuk mempool | Pastikan pakai binary `v0.0.0-nux-test3` atau lebih baru (fix P2WKH). Cek dengan `nusacoin-cli -testnet getmempoolentry <txid>`. |
 
-### FAQ singkat
+### FAQ
 
-**Q: Kalau baru node saya saja yang jalan, apakah bisa dipakai?**
-A: Daemon dan wallet-nya bisa jalan normal, tapi payment tidak bisa — payment butuh channel, dan channel butuh 2 pihak. Minimal 2 node + 1 channel untuk payment pertama terjadi. Kabar baik: 2 node bisa jalan di 1 mesin yang sama (datadir dan port P2P/RPC yang berbeda) untuk testing.
+**Q: Node saya saja yang jalan, bisa dipakai?**
+A: Daemon dan wallet bisa jalan normal, tapi payment butuh channel, dan channel butuh 2 pihak. Minimal 2 node + 1 channel untuk payment pertama. Kabar baik: 2 node bisa di 1 mesin (bagian 13).
 
 **Q: Apa bedanya `connect` dan `openchannel`?**
-A: `connect` hanya berkenalan di jaringan P2P (belum ada dana). `openchannel` yang mengunci dana dan membuka channel pembayaran — dilakukan setelah connect.
+A: `connect` = berkenalan di jaringan P2P (belum ada dana). `openchannel` = mengunci dana dan membuka channel pembayaran (dilakukan setelah connect).
+
+**Q: Apakah dana di channel aman kalau node mati?**
+A: Ya, selama kamu pegang 24 kata seed. Channel bisa di-force-close dan dana kembali on-chain (dengan timelock, lihat bagian 12).
+
+**Q: Kenapa invoice diawali `lntn` bukan `lnbc`?**
+A: `lnbc` untuk Bitcoin. `lntn` = Lightning + testnet + nusacoin. Setiap chain punya prefix sendiri.
 
 ---
 
-## 13. File & Port Penting (Referensi Cepat)
+## 15. Referensi Cepat
 
-| Item | Lokasi / Nilai |
-|------|----------------|
+| Item | Nilai |
+|------|-------|
 | Config lnd | `~/.lnd/lnd.conf` |
 | Config nusacoind | `~/.nusacoin/nusacoin.conf` |
-| Macaroon lnd (testnet) | `~/.lnd/data/chain/nusacoin/testnet/admin.macaroon` |
-| TLS cert lnd | `~/.lnd/tls.cert` |
+| Binary | `~/lnd-nux/lnd`, `~/lnd-nux/lncli` |
+| Log lnd | `~/lnd-nux/lnd.log` |
 | lnd RPC / REST / P2P | 10009 / 8080 / 9735 |
 | nusacoind testnet RPC | 18332 |
-| nusacoind ZMQ block / tx | 28332 / 28333 |
-| Prefix alamat testnet | `tn1...` (bech32) |
+| nusacoind ZMQ block / tx | 28332 / 28333 (harus beda!) |
+| Prefix alamat testnet | `tn1...` |
 | Prefix invoice testnet | `lntn...` |
-| Block time | ~6 menit |
+| Satuan terkecil | nusan (1 NUX = 100.000.000 nusan) |
+| Block time (desain) | ~6 menit |
+| Coinbase maturity | 10 block |
+| Max channel default | 16.777.215 nusan |
+| Max channel wumbo | 10 NUX (1.000.000.000 nusan) |
+| Konfirmasi channel | 1–6 block (skala otomatis) |
 
 ---
 
-*Dokumen ini bagian dari proyek LightningNUX — branch `nusacoin` di https://github.com/Nusanian/lnd. Testnet & signet Nusacoin dikelola komunitas.*
+*Dokumen ini bagian dari proyek **LightningNUX** — branch `nusacoin` di https://github.com/Nusanian/lnd.*
+*Terakhir diperbarui: 13 Oktober 2026 (mencakup hasil live test: channel 1 NUX + payment 500.000 nusan sukses di testnet).*
