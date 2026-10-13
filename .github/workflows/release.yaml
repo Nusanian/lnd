@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+      # Tag nux (mis. v0.1.0-nux1) ditangani oleh release-nux.yml
+      - '!v*-nux*'
 
 defaults:
   run:

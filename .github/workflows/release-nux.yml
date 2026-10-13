@@ -1,0 +1,99 @@
+name: Release build (nux)
+
+# Membangun binary lnd-nux (lnd + lncli) untuk komunitas.
+# Trigger:
+#   - push tag seperti v0.1.0-nux1  -> build + publish ke GitHub Release
+#   - workflow_dispatch             -> build saja (artefak), untuk tes
+on:
+  push:
+    tags:
+      - 'v*-nux*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goarch: amd64
+          - goarch: arm64
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v4
+
+      - name: setup go (versi dari go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: set version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          else
+            echo "VERSION=dev-${GITHUB_SHA::8}" >> $GITHUB_ENV
+          fi
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: build lnd dan lncli (statis, tanpa cgo)
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          LDFLAGS="-s -w -buildid= -X github.com/lightningnetwork/lnd/build.Commit=${{ env.COMMIT }}"
+          mkdir -p dist
+          go build -trimpath -ldflags "$LDFLAGS" -o dist/lnd .
+          go build -trimpath -ldflags "$LDFLAGS" -o dist/lncli ./cmd/lncli
+
+      - name: smoke test binary (amd64)
+        if: matrix.goarch == 'amd64'
+        run: |
+          ./dist/lnd --version
+          ./dist/lncli --version
+
+      - name: package tarball + checksum
+        run: |
+          TARBALL="lnd-nux-${{ env.VERSION }}-linux-${{ matrix.goarch }}.tar.gz"
+          tar -czf "$TARBALL" -C dist lnd lncli
+          sha256sum "$TARBALL" > "$TARBALL.sha256"
+          echo "TARBALL=$TARBALL" >> $GITHUB_ENV
+
+      - name: upload artefak (tes manual)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TARBALL }}
+          path: |
+            ${{ env.TARBALL }}
+            ${{ env.TARBALL }}.sha256
+
+      - name: publish ke GitHub Release (tag)
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: |
+            ${{ env.TARBALL }}
+            ${{ env.TARBALL }}.sha256
+          body: |
+            ## lnd-nux ${{ env.VERSION }}
+
+            Binary siap pakai untuk komunitas Nusacoin (fase testnet).
+            Tanpa perlu install Go — download, extract, jalankan.
+
+            - Berisi `lnd` dan `lncli` untuk `linux/amd64` dan `linux/arm64`
+            - Build statis (CGO_ENABLED=0), commit `${{ env.COMMIT }}`
+
+            ### Verifikasi checksum
+            ```
+            sha256sum -c lnd-nux-${{ env.VERSION }}-linux-<arch>.tar.gz.sha256
+            ```
+
+            Panduan instalasi: `docs/PANDUAN_INSTALASI.md` di branch `nusacoin`.
