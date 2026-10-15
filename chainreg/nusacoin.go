@@ -157,8 +157,8 @@ var NusacoinMainNetParams = BitcoinNetParams{
 		ScriptHashAddrID: 0x4b, // addresses start with 'X'
 		PrivateKeyID:     0x57,
 
-		HDPrivateKeyID: [4]byte{0x04, 0x88, 0xb2, 0x1e},
-		HDPublicKeyID:  [4]byte{0x04, 0x88, 0xad, 0xe4},
+		HDPrivateKeyID: [4]byte{0x04, 0x88, 0xad, 0xe4},
+		HDPublicKeyID:  [4]byte{0x04, 0x88, 0xb2, 0x1e},
 		HDCoinType:     NusacoinHDCoinType,
 	},
 	RPCPort:  "28832",
