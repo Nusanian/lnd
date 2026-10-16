@@ -139,7 +139,7 @@ var NusacoinMainNetParams = BitcoinNetParams{
 		BIP0065Height: 1,
 		BIP0066Height: 1,
 
-		CoinbaseMaturity:         100,
+		CoinbaseMaturity:         10,
 		SubsidyReductionInterval: 300000,
 		TargetTimespan:           time.Hour * 24 * 14, // 3360 * 360s
 		TargetTimePerBlock:       time.Minute * 6,
@@ -183,7 +183,7 @@ var NusacoinTestNetParams = BitcoinNetParams{
 		BIP0065Height: 1,
 		BIP0066Height: 1,
 
-		CoinbaseMaturity:         100,
+		CoinbaseMaturity:         10,
 		SubsidyReductionInterval: 300000,
 		TargetTimespan:           time.Hour * 24 * 14,
 		TargetTimePerBlock:       time.Minute * 6,
@@ -230,7 +230,7 @@ var NusacoinRegTestNetParams = BitcoinNetParams{
 		BIP0065Height: 1,
 		BIP0066Height: 1,
 
-		CoinbaseMaturity:         100,
+		CoinbaseMaturity:         10,
 		SubsidyReductionInterval: 300000,
 		TargetTimespan:           time.Hour * 24 * 14,
 		TargetTimePerBlock:       time.Minute * 6,
@@ -278,7 +278,7 @@ var NusacoinSigNetParams = BitcoinNetParams{
 		BIP0065Height: 1,
 		BIP0066Height: 1,
 
-		CoinbaseMaturity:         100,
+		CoinbaseMaturity:         10,
 		SubsidyReductionInterval: 300000,
 		TargetTimespan:           time.Hour * 24 * 14,
 		TargetTimePerBlock:       time.Minute * 6,
