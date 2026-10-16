@@ -159,8 +159,8 @@ func ErrChanTooSmall(chanSize, minChanSize btcutil.Amount) ReservationError {
 // configured value for the max channel size we'll accept.
 func ErrChanTooLarge(chanSize, maxChanSize btcutil.Amount) ReservationError {
 	return ReservationError{
-		fmt.Errorf("chan size of %v exceeds maximum chan size of %v",
-			chanSize, maxChanSize),
+		fmt.Errorf("chan size of %v NUX exceeds maximum chan size of %v NUX",
+			chanSize.ToBTC(), maxChanSize.ToBTC()),
 	}
 }
 
@@ -168,7 +168,7 @@ func ErrChanTooLarge(chanSize, maxChanSize btcutil.Amount) ReservationError {
 // was rejected.
 func ErrInvalidDustLimit(dustLimit btcutil.Amount) ReservationError {
 	return ReservationError{
-		fmt.Errorf("dust limit %v is invalid", dustLimit),
+		fmt.Errorf("dust limit %v NUX is invalid", dustLimit.ToBTC()),
 	}
 }
 

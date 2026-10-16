@@ -48,34 +48,34 @@ func pBtcToMSat(p uint64) (lnwire.MilliSatoshi, error) {
 		return 0, fmt.Errorf("minimum amount is 10p")
 	}
 	if p%10 != 0 {
-		return 0, fmt.Errorf("amount %d pBTC not expressible in msat",
+		return 0, fmt.Errorf("amount %d pNUX not expressible in msat",
 			p)
 	}
 	return lnwire.MilliSatoshi(p / 10), nil
 }
 
-// mSatToMBtc converts the given amount in millisatoshis to milliBTC.
+// mSatToMBtc converts the given amount in millisatoshis to milliNUX.
 func mSatToMBtc(msat lnwire.MilliSatoshi) (uint64, error) {
 	if msat%100000000 != 0 {
 		return 0, fmt.Errorf("%d msat not expressible "+
-			"in mBTC", msat)
+			"in mNUX", msat)
 	}
 	return uint64(msat / 100000000), nil
 }
 
-// mSatToUBtc converts the given amount in millisatoshis to microBTC.
+// mSatToUBtc converts the given amount in millisatoshis to microNUX.
 func mSatToUBtc(msat lnwire.MilliSatoshi) (uint64, error) {
 	if msat%100000 != 0 {
 		return 0, fmt.Errorf("%d msat not expressible "+
-			"in uBTC", msat)
+			"in uNUX", msat)
 	}
 	return uint64(msat / 100000), nil
 }
 
-// mSatToNBtc converts the given amount in millisatoshis to nanoBTC.
+// mSatToNBtc converts the given amount in millisatoshis to nanoNUX.
 func mSatToNBtc(msat lnwire.MilliSatoshi) (uint64, error) {
 	if msat%100 != 0 {
-		return 0, fmt.Errorf("%d msat not expressible in nBTC", msat)
+		return 0, fmt.Errorf("%d msat not expressible in nNUX", msat)
 	}
 	return uint64(msat / 100), nil
 }
@@ -133,10 +133,10 @@ func encodeAmount(msat lnwire.MilliSatoshi) (string, error) {
 		return strconv.FormatInt(int64(msat/mSatPerBtc), 10), nil
 	}
 
-	// Should always be expressible in pico BTC.
+	// Should always be expressible in pico NUX.
 	pico, err := fromMSat['p'](msat)
 	if err != nil {
-		return "", fmt.Errorf("unable to express %d msat as pBTC: %w",
+		return "", fmt.Errorf("unable to express %d msat as pNUX: %w",
 			msat, err)
 	}
 	shortened := strconv.FormatUint(pico, 10) + "p"

@@ -2219,7 +2219,7 @@ func (r *rpcServer) parseOpenChannelReq(in *lnrpc.OpenChannelRequest,
 	// if it exceeds the maximum funding amount.
 	if !in.FundMax && !wumboEnabled && localFundingAmt > MaxFundingAmount {
 		return nil, fmt.Errorf("funding amount is too large, the max "+
-			"channel size is: %v", MaxFundingAmount)
+			"channel size is: %v NUX", MaxFundingAmount.ToBTC())
 	}
 
 	// Restrict the size of the channel we'll actually open. At a later

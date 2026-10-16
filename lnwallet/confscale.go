@@ -15,7 +15,7 @@ const (
 	maxRequiredConfs = 6
 
 	// maxChannelSize is the maximum expected channel size in satoshis.
-	// This matches MaxBtcFundingAmount (0.16777215 BTC).
+	// This matches MaxBtcFundingAmount (0.16777215 NUX).
 	maxChannelSize = 16777215
 )
 

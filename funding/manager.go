@@ -91,14 +91,14 @@ const (
 	MinChanFundingSize = btcutil.Amount(20000)
 
 	// MaxBtcFundingAmount is a soft-limit of the maximum channel size
-	// currently accepted on the Bitcoin chain within the Lightning
+	// currently accepted on the Nusacoin chain within the Lightning
 	// Protocol. This limit is defined in BOLT-0002, and serves as an
 	// initial precautionary limit while implementations are battle tested
 	// in the real world.
 	MaxBtcFundingAmount = btcutil.Amount(1<<24) - 1
 
 	// MaxBtcFundingAmountWumbo is a soft-limit on the maximum size of wumbo
-	// channels. This limit is 10 BTC and is the only thing standing between
+	// channels. This limit is 10 NUX and is the only thing standing between
 	// you and limitless channel size (apart from 21 million cap).
 	MaxBtcFundingAmountWumbo = btcutil.Amount(1000000000)
 

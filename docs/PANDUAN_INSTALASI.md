@@ -385,7 +385,7 @@ rpclisten=127.0.0.1:10010
 | lnd tidak mau start | Cek: (1) `nusacoind` sudah 100% sync? (2) Port ZMQ block & tx beda? (3) Lihat log `~/lnd-nux/lnd.log`. |
 | `unknown option: wumbo-channels` | Opsi ber-namespace wajib format dotted: `protocol.wumbo-channels=true` (bukan `wumbo-channels=true`). |
 | Channel tidak aktif setelah open | Butuh konfirmasi (1–6 block tergantung ukuran, lihat tabel bagian 9). Cek `listchannels`. |
-| `funding amount is too large, the max channel size is: 0.16777215 BTC` | Melebihi batas default 16.777.215 nusan. Aktifkan wumbo di kedua node (bagian 10). (Label "BTC" di pesan error ini akan diganti "NUX" di versi mendatang.) |
+| `funding amount is too large, the max channel size is: 0.16777215 NUX` | Melebihi batas default 16.777.215 nusan. Aktifkan wumbo di kedua node (bagian 10). |
 | Payment gagal / `no route` | Pastikan channel `active: true`, peer connect, dan likuiditas cukup di arah yang benar. |
 | `Number of pending channels exceed maximum` | Tambahkan `--maxpendingchannels=5` saat start lnd (untuk testing). |
 | Funding tx tidak masuk mempool | Pastikan pakai binary `v0.0.0-nux-test3` atau lebih baru (fix P2WKH). Cek dengan `nusacoin-cli -testnet getmempoolentry <txid>`. |
