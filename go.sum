@@ -23,6 +23,8 @@ github.com/Nusanian/btcd/wire/v2 v2.0.0-20261008121938-e1bfc51d17ab h1:WEgJ+TM0/
 github.com/Nusanian/btcd/wire/v2 v2.0.0-20261008121938-e1bfc51d17ab/go.mod h1:o23dUhRwLbz+pzsQ8oJ5RiBl3ZKtAfigN4K1gaiPCa8=
 github.com/Nusanian/btcwallet v0.0.0-20261008113047-7c0091f17aba h1:u8Y93Ka3oyxI6R3ci/+ODBJ4+frSN71WP4Yw8h3wBhc=
 github.com/Nusanian/btcwallet v0.0.0-20261008113047-7c0091f17aba/go.mod h1:IQrr6b13s0ZTaj9RlM/LhQ+Xvmo/gK86L9oGu2upIeQ=
+github.com/Nusanian/btcwallet v0.0.0-20261022201835-003b78a5cbb8 h1:TVWBfw3hBbpUbJygsAqj8tYrW4bUyKXGMJdkJVdc17w=
+github.com/Nusanian/btcwallet v0.0.0-20261022201835-003b78a5cbb8/go.mod h1:IQrr6b13s0ZTaj9RlM/LhQ+Xvmo/gK86L9oGu2upIeQ=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
 github.com/Yawning/aez v0.0.0-20211027044916-e49e68abd344 h1:cDVUiFo+npB0ZASqnw4q90ylaVAbnYyx0JYqK4YcGok=

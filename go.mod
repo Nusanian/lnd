@@ -234,7 +234,7 @@ replace github.com/lightningnetwork/lnd/queue => ./queue
 
 replace github.com/lightningnetwork/lnd/ticker => ./ticker
 
-replace github.com/btcsuite/btcwallet => github.com/Nusanian/btcwallet v0.0.0-20261008113047-7c0091f17aba
+replace github.com/btcsuite/btcwallet => github.com/Nusanian/btcwallet v0.0.0-20261022201835-003b78a5cbb8
 
 replace github.com/btcsuite/btcd => github.com/Nusanian/btcd v0.0.0-20261008121938-e1bfc51d17ab
 
