@@ -1984,10 +1984,13 @@ func (b *BtcWallet) IsSynced() (bool, int64, error) {
 		return false, 0, err
 	}
 
-	// If the timestamp on the best header is more than 2 hours in the
-	// past, then we're not yet synced.
-	minus24Hours := time.Now().Add(-2 * time.Hour)
-	if blockHeader.Timestamp.Before(minus24Hours) {
+	// Nusacoin uses scheduled mining, so the chain tip can legitimately
+	// be days old without the node being behind the network. Only
+	// consider the wallet unsynced if the best header is older than 14
+	// days: twice the average weekly mining gap, so one skipped mining
+	// week is tolerated. The height checks above still apply.
+	maxHeaderAge := 14 * 24 * time.Hour
+	if blockHeader.Timestamp.Before(time.Now().Add(-maxHeaderAge)) {
 		return false, bestTimestamp, nil
 	}
 
